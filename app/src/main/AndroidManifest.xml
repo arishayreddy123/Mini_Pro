@@ -25,6 +25,9 @@
         </activity>
         <activity android:name=".admin.AdminCreateTournamentActivity" />
         <activity android:name=".admin.AdminViewTournamentsActivity" />
+        <activity android:name=".player.PlayerQuizActivity" />
+        <activity android:name=".player.PlayerViewTournamentsActivity" />
+
 
 
     </application>
