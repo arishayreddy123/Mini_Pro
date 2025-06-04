@@ -5,10 +5,15 @@ import android.util.Log;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import com.arishay.mini_project.R;
-import com.arishay.mini_project.model.*;
-import com.arishay.mini_project.network.*;
+import com.arishay.mini_project.model.OpenTDBResponse;
+import com.arishay.mini_project.model.Question;
+import com.arishay.mini_project.model.Tournament;
+import com.arishay.mini_project.network.OpenTDBService;
+import com.arishay.mini_project.network.RetrofitClient;
 import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -56,7 +61,7 @@ public class AdminCreateTournamentActivity extends AppCompatActivity {
                 .add(tournament)
                 .addOnSuccessListener(documentReference -> {
                     Toast.makeText(this, "Tournament created", Toast.LENGTH_SHORT).show();
-                    fetchQuestionsForTournament(documentReference.getId(), difficulty);
+                    fetchQuestionsForTournament(documentReference.getId(), category, difficulty);
                     clearFields();
                 })
                 .addOnFailureListener(e -> {
@@ -64,19 +69,29 @@ public class AdminCreateTournamentActivity extends AppCompatActivity {
                 });
     }
 
-    private void fetchQuestionsForTournament(String tournamentId, String difficulty) {
+    private void fetchQuestionsForTournament(String tournamentId, String category, String difficulty) {
         OpenTDBService service = RetrofitClient.getService();
-        service.getQuestions(10, 9, difficulty, "mixed").enqueue(new Callback<OpenTDBResponse>() {
+
+        int cat = Integer.parseInt(category);  // Must be numeric (e.g. 9 for General Knowledge)
+        service.getQuestions(10, cat, difficulty, "multiple").enqueue(new Callback<OpenTDBResponse>() {
             @Override
             public void onResponse(Call<OpenTDBResponse> call, Response<OpenTDBResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Question> questions = response.body().results;
+
+                    if (questions.isEmpty()) {
+                        Toast.makeText(AdminCreateTournamentActivity.this, "No questions found", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
                     for (Question q : questions) {
                         db.collection("tournaments")
                                 .document(tournamentId)
                                 .collection("questions")
                                 .add(q);
                     }
+
+                    Log.d("OpenTDB", "Questions added: " + questions.size());
                     Toast.makeText(AdminCreateTournamentActivity.this, "Questions added", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(AdminCreateTournamentActivity.this, "Failed to fetch questions", Toast.LENGTH_SHORT).show();
@@ -86,7 +101,7 @@ public class AdminCreateTournamentActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<OpenTDBResponse> call, Throwable t) {
                 Toast.makeText(AdminCreateTournamentActivity.this, "API Error: " + t.getMessage(), Toast.LENGTH_LONG).show();
-                Log.e("OpenTDB", "Error", t);
+                Log.e("OpenTDB", "API Failure", t);
             }
         });
     }
