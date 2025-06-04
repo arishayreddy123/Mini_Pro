@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Mini_Project</string>
+    <string-array name="roles_array">
+        <item>admin</item>
+        <item>player</item>
+    </string-array>
+
+
 </resources>

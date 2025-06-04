@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:layout_margin="8dp"
+    android:background="@android:color/darker_gray"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <!-- Tournament Name -->
+    <TextView
+        android:id="@+id/tournamentName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tournament Name"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Dates -->
+    <TextView
+        android:id="@+id/tournamentDates"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start - End"
+        android:textSize="14sp"
+        android:paddingTop="4dp" />
+
+    <!-- Likes -->
+    <TextView
+        android:id="@+id/likesText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Likes: 0"
+        android:textSize="14sp"
+        android:paddingTop="4dp"
+        android:textColor="@android:color/holo_red_dark" />
+
+    <!-- Like/Unlike Button -->
+    <Button
+        android:id="@+id/likeBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Like / Unlike"
+        android:layout_marginTop="6dp" />
+
+    <!-- Buttons -->
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/editBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Edit" />
+
+        <Button
+            android:id="@+id/deleteBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Delete"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,13 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:padding="24dp"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Create Tournament"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingBottom="16dp" />
 
         <EditText
             android:id="@+id/nameInput"
@@ -19,35 +27,36 @@
             android:id="@+id/categoryInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Category"
-            android:layout_marginTop="12dp" />
+            android:hint="Category (e.g., 9)" />
 
         <EditText
             android:id="@+id/difficultyInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Difficulty"
-            android:layout_marginTop="12dp" />
+            android:hint="Difficulty (easy, medium, hard)" />
 
         <EditText
             android:id="@+id/startDateInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Start Date (e.g. 2025-06-05)"
-            android:layout_marginTop="12dp" />
+            android:hint="Start Date (YYYY-MM-DD)" />
 
         <EditText
             android:id="@+id/endDateInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="End Date (e.g. 2025-06-10)"
-            android:layout_marginTop="12dp" />
+            android:hint="End Date (YYYY-MM-DD)" />
 
         <Button
             android:id="@+id/saveBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save Tournament"
-            android:layout_marginTop="24dp" />
+            android:text="Create Tournament" />
+
+        <Button
+            android:id="@+id/backBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Back" />
     </LinearLayout>
 </ScrollView>

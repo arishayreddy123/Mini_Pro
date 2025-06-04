@@ -5,15 +5,10 @@ import android.util.Log;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import com.arishay.mini_project.R;
-import com.arishay.mini_project.model.OpenTDBResponse;
-import com.arishay.mini_project.model.Question;
-import com.arishay.mini_project.model.Tournament;
-import com.arishay.mini_project.network.OpenTDBService;
-import com.arishay.mini_project.network.RetrofitClient;
+import com.arishay.mini_project.model.*;
+import com.arishay.mini_project.network.*;
 import com.google.firebase.firestore.FirebaseFirestore;
-
 import java.util.List;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -21,9 +16,8 @@ import retrofit2.Response;
 public class AdminCreateTournamentActivity extends AppCompatActivity {
 
     private EditText nameInput, categoryInput, difficultyInput, startDateInput, endDateInput;
-    private Button saveBtn;
+    private Button saveBtn, backBtn;
     private FirebaseFirestore db;
-    private String selectedDifficulty = "medium"; // default
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,10 +30,12 @@ public class AdminCreateTournamentActivity extends AppCompatActivity {
         startDateInput = findViewById(R.id.startDateInput);
         endDateInput = findViewById(R.id.endDateInput);
         saveBtn = findViewById(R.id.saveBtn);
+        backBtn = findViewById(R.id.backBtn);
 
         db = FirebaseFirestore.getInstance();
 
         saveBtn.setOnClickListener(v -> saveTournament());
+        backBtn.setOnClickListener(v -> finish());
     }
 
     private void saveTournament() {
@@ -75,14 +71,12 @@ public class AdminCreateTournamentActivity extends AppCompatActivity {
             public void onResponse(Call<OpenTDBResponse> call, Response<OpenTDBResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Question> questions = response.body().results;
-
                     for (Question q : questions) {
                         db.collection("tournaments")
                                 .document(tournamentId)
                                 .collection("questions")
                                 .add(q);
                     }
-
                     Toast.makeText(AdminCreateTournamentActivity.this, "Questions added", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(AdminCreateTournamentActivity.this, "Failed to fetch questions", Toast.LENGTH_SHORT).show();

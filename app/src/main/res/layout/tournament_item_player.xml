@@ -1,5 +1,4 @@
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="12dp"
@@ -7,17 +6,17 @@
     android:padding="16dp">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/tourName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Tournament Name"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textStyle="bold"/>
 
         <TextView
             android:id="@+id/tourCategory"
@@ -39,9 +38,16 @@
 
         <Button
             android:id="@+id/playBtn"
-            android:text="Play"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="Play"
+            android:layout_marginTop="8dp"/>
+
+        <Button
+            android:id="@+id/likeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Like"
             android:layout_marginTop="8dp"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

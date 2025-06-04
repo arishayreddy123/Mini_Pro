@@ -12,23 +12,34 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Mini_Project"
         tools:targetApi="31">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
 
+        <!-- Launcher Activity -->
+        <activity
+            android:name=".WelcomeActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-
         </activity>
+
+        <!-- Navigation screen to choose login/register -->
+        <activity android:name=".LaunchActivity" />
+
+        <!-- Auth screens -->
+        <activity android:name=".auth.LoginActivity" />
+        <activity android:name=".auth.RegisterActivity" />
+
+        <!-- Admin activities -->
         <activity android:name=".admin.AdminCreateTournamentActivity" />
         <activity android:name=".admin.AdminViewTournamentsActivity" />
-        <activity android:name=".player.PlayerQuizActivity" />
+
+        <!-- Player activities -->
         <activity android:name=".player.PlayerViewTournamentsActivity" />
+        <activity android:name=".player.PlayerQuizActivity" />
 
-
+        <!-- Default MainActivity (not currently used to launch) -->
+        <activity android:name=".MainActivity" />
 
     </application>
 

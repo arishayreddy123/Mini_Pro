@@ -9,6 +9,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.arishay.mini_project.R;
 import com.arishay.mini_project.model.Tournament;
 import com.arishay.mini_project.player.PlayerQuizActivity;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
 
@@ -40,8 +42,17 @@ public class PlayerTournamentAdapter extends RecyclerView.Adapter<PlayerTourname
 
         holder.playBtn.setOnClickListener(v -> {
             Intent intent = new Intent(context, PlayerQuizActivity.class);
-            intent.putExtra("tournamentId", t.id); // pass ID
+            intent.putExtra("tournamentId", t.id);
             context.startActivity(intent);
+        });
+
+        holder.likeBtn.setOnClickListener(v -> {
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            db.collection("tournaments").document(t.id)
+                    .update("likes", FieldValue.increment(1))
+                    .addOnSuccessListener(unused ->
+                            Toast.makeText(context, "Liked!", Toast.LENGTH_SHORT).show()
+                    );
         });
     }
 
@@ -52,7 +63,7 @@ public class PlayerTournamentAdapter extends RecyclerView.Adapter<PlayerTourname
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView name, category, difficulty, dates;
-        Button playBtn;
+        Button playBtn, likeBtn;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -61,6 +72,7 @@ public class PlayerTournamentAdapter extends RecyclerView.Adapter<PlayerTourname
             difficulty = itemView.findViewById(R.id.tourDifficulty);
             dates = itemView.findViewById(R.id.tourDates);
             playBtn = itemView.findViewById(R.id.playBtn);
+            likeBtn = itemView.findViewById(R.id.likeBtn);
         }
     }
 }
