@@ -1,8 +1,9 @@
 package com.arishay.mini_project.player;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.*;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.arishay.mini_project.R;
 import com.arishay.mini_project.model.Question;
@@ -14,7 +15,8 @@ public class PlayerQuizActivity extends AppCompatActivity {
 
     private TextView questionText, scoreText;
     private RadioGroup optionsGroup;
-    private Button submitBtn, backBtn;
+    private Button submitBtn, returnBtn;
+
     private FirebaseFirestore db;
     private List<Question> questionList = new ArrayList<>();
     private int currentQuestionIndex = 0;
@@ -30,7 +32,7 @@ public class PlayerQuizActivity extends AppCompatActivity {
         scoreText = findViewById(R.id.scoreText);
         optionsGroup = findViewById(R.id.optionsGroup);
         submitBtn = findViewById(R.id.submitBtn);
-        backBtn = findViewById(R.id.backBtn);
+        returnBtn = findViewById(R.id.returnBtn);
 
         tournamentId = getIntent().getStringExtra("tournamentId");
         db = FirebaseFirestore.getInstance();
@@ -38,16 +40,10 @@ public class PlayerQuizActivity extends AppCompatActivity {
         loadQuestions();
 
         submitBtn.setOnClickListener(v -> checkAnswer());
-        backBtn.setOnClickListener(v -> confirmExit());
-    }
-
-    private void confirmExit() {
-        new AlertDialog.Builder(this)
-                .setTitle("Exit Quiz?")
-                .setMessage("Are you sure you want to leave this quiz?")
-                .setPositiveButton("Yes", (dialog, which) -> finish())
-                .setNegativeButton("No", null)
-                .show();
+        returnBtn.setOnClickListener(v -> {
+            startActivity(new Intent(this, PlayerViewTournamentsActivity.class));
+            finish();
+        });
     }
 
     private void loadQuestions() {
@@ -112,5 +108,6 @@ public class PlayerQuizActivity extends AppCompatActivity {
         questionText.setText("🎉 Quiz Completed!");
         scoreText.setText("Your Score: " + score + "/" + questionList.size());
         optionsGroup.removeAllViews();
+        returnBtn.setVisibility(View.VISIBLE);
     }
 }
