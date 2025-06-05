@@ -15,20 +15,17 @@ import java.util.*;
 
 public class PlayerQuizActivity extends AppCompatActivity {
 
-    private TextView questionText, scoreText, feedbackText, correctNumbersText, incorrectNumbersText;
+    private TextView questionText, feedbackText;
     private RadioGroup optionsGroup;
-    private Button submitBtn, returnBtn;
+    private Button submitBtn;
 
     private FirebaseFirestore db;
     private List<Question> questionList = new ArrayList<>();
+    private Map<Integer, String> selectedAnswers = new HashMap<>();
     private int currentQuestionIndex = 0;
-    private int score = 0;
     private String tournamentId;
-
-    private List<Integer> correctIndexes = new ArrayList<>();
-    private List<Integer> incorrectIndexes = new ArrayList<>();
-
     private boolean isWaiting = false;
+    private boolean isEditing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,24 +33,18 @@ public class PlayerQuizActivity extends AppCompatActivity {
         setContentView(R.layout.activity_player_quiz);
 
         questionText = findViewById(R.id.questionText);
-        scoreText = findViewById(R.id.scoreText);
         feedbackText = findViewById(R.id.feedbackText);
         optionsGroup = findViewById(R.id.optionsGroup);
         submitBtn = findViewById(R.id.submitBtn);
-        returnBtn = findViewById(R.id.returnBtn);
-        correctNumbersText = findViewById(R.id.correctNumbersText);
-        incorrectNumbersText = findViewById(R.id.incorrectNumbersText);
 
         tournamentId = getIntent().getStringExtra("tournamentId");
-        db = FirebaseFirestore.getInstance();
+        isEditing = getIntent().getBooleanExtra("isEditing", false);
+        currentQuestionIndex = getIntent().getIntExtra("editIndex", 0);
 
+        db = FirebaseFirestore.getInstance();
         loadQuestions();
 
-        submitBtn.setOnClickListener(v -> checkAnswer());
-        returnBtn.setOnClickListener(v -> {
-            startActivity(new Intent(this, PlayerViewTournamentsActivity.class));
-            finish();
-        });
+        submitBtn.setOnClickListener(v -> handleSubmit());
     }
 
     private void loadQuestions() {
@@ -66,18 +57,13 @@ public class PlayerQuizActivity extends AppCompatActivity {
                         Question q = doc.toObject(Question.class);
                         questionList.add(q);
                     }
-                    showNextQuestion();
+                    showQuestion();
                 });
     }
 
-    private void showNextQuestion() {
-        if (currentQuestionIndex >= questionList.size()) {
-            showScore();
-            return;
-        }
-
-        optionsGroup.removeAllViews();
+    private void showQuestion() {
         feedbackText.setVisibility(View.GONE);
+        optionsGroup.removeAllViews();
 
         Question q = questionList.get(currentQuestionIndex);
         questionText.setText("Q" + (currentQuestionIndex + 1) + ": " + q.question);
@@ -90,65 +76,42 @@ public class PlayerQuizActivity extends AppCompatActivity {
             RadioButton rb = new RadioButton(this);
             rb.setText(option);
             optionsGroup.addView(rb);
+            if (option.equals(selectedAnswers.get(currentQuestionIndex))) {
+                rb.setChecked(true);
+            }
         }
     }
 
-    private void checkAnswer() {
+    private void handleSubmit() {
         if (isWaiting) return;
 
         int selectedId = optionsGroup.getCheckedRadioButtonId();
-
-        // ❌ No answer selected
         if (selectedId == -1) {
             Toast.makeText(this, "Please select an answer", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // ✅ Answer selected
-        RadioButton selectedBtn = findViewById(selectedId);
-        String selectedAnswer = selectedBtn.getText().toString();
-        Question current = questionList.get(currentQuestionIndex);
-        String correctAnswer = current.correct_answer;
+        String selectedAnswer = ((RadioButton) findViewById(selectedId)).getText().toString();
+        selectedAnswers.put(currentQuestionIndex, selectedAnswer);
 
-        isWaiting = true;
-        submitBtn.setEnabled(false);
-
-        if (selectedAnswer.equals(correctAnswer)) {
-            score++;
-            correctIndexes.add(currentQuestionIndex + 1);
-            feedbackText.setText("✅ Correct!");
+        if (isEditing) {
+            // return to review screen
+            Intent intent = new Intent(this, ReviewAnswersActivity.class);
+            intent.putExtra("tournamentId", tournamentId);
+            intent.putExtra("answers", new HashMap<>(selectedAnswers));
+            startActivity(intent);
+            finish();
         } else {
-            incorrectIndexes.add(currentQuestionIndex + 1);
-            feedbackText.setText("❌ Incorrect.\nCorrect answer: " + correctAnswer);
-        }
-
-        feedbackText.setVisibility(View.VISIBLE);
-
-        new Handler().postDelayed(() -> {
-            feedbackText.setVisibility(View.GONE);
-            submitBtn.setEnabled(true);
-            isWaiting = false;
             currentQuestionIndex++;
-
             if (currentQuestionIndex < questionList.size()) {
-                showNextQuestion();
+                showQuestion();
             } else {
-                showScore();
+                Intent intent = new Intent(this, ReviewAnswersActivity.class);
+                intent.putExtra("tournamentId", tournamentId);
+                intent.putExtra("answers", new HashMap<>(selectedAnswers));
+                startActivity(intent);
+                finish();
             }
-        }, 2500);
-    }
-
-    private void showScore() {
-        submitBtn.setVisibility(View.GONE);
-        returnBtn.setVisibility(View.VISIBLE);
-
-        questionText.setText("🎉 Quiz Completed!");
-        scoreText.setText("Your Score: " + score + "/" + questionList.size());
-        optionsGroup.removeAllViews();
-
-        correctNumbersText.setText("✅ Correct Questions: " + correctIndexes.toString());
-        incorrectNumbersText.setText("❌ Incorrect Questions: " + incorrectIndexes.toString());
-        correctNumbersText.setVisibility(View.VISIBLE);
-        incorrectNumbersText.setVisibility(View.VISIBLE);
+        }
     }
 }
