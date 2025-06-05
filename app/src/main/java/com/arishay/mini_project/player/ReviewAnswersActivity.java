@@ -106,15 +106,45 @@ public class ReviewAnswersActivity extends AppCompatActivity {
 
         answersContainer.removeAllViews();
 
-        TextView resultText = new TextView(this);
-        resultText.setText("✅ Score: " + score + "/" + questionList.size()
-                + "\n\n✅ Correct Questions: " + correctQ
-                + "\n❌ Incorrect Questions: " + incorrectQ
-                + "\n\n🎉 Thanks for playing!");
-        resultText.setTextSize(18);
-        resultText.setPadding(0, 20, 0, 20);
+        TextView title = new TextView(this);
+        title.setText("🎉 Quiz Results");
+        title.setTextSize(20);
+        title.setPadding(0, 0, 0, 20);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        answersContainer.addView(title);
 
-        answersContainer.addView(resultText);
+        TextView scoreText = new TextView(this);
+        scoreText.setText("✅ Score: " + score + "/" + questionList.size());
+        scoreText.setTextSize(18);
+        scoreText.setPadding(0, 8, 0, 16);
+        answersContainer.addView(scoreText);
+
+        TextView correctText = new TextView(this);
+        correctText.setText("✅ Correct Questions: " + correctQ);
+        correctText.setTextSize(16);
+        correctText.setPadding(0, 4, 0, 8);
+        answersContainer.addView(correctText);
+
+        TextView incorrectText = new TextView(this);
+        incorrectText.setText("❌ Incorrect Questions: " + incorrectQ);
+        incorrectText.setTextSize(16);
+        incorrectText.setPadding(0, 4, 0, 16);
+        answersContainer.addView(incorrectText);
+
+        TextView thanks = new TextView(this);
+        thanks.setText("🎉 Thanks for playing!");
+        thanks.setTextSize(17);
+        thanks.setPadding(0, 24, 0, 12);
+        thanks.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        answersContainer.addView(thanks);
+
         submitBtn.setVisibility(View.GONE);
+
+        Button backBtn = findViewById(R.id.backBtn);
+        backBtn.setVisibility(View.VISIBLE);
+        backBtn.setOnClickListener(v -> {
+            startActivity(new Intent(this, PlayerViewTournamentsActivity.class));
+            finish();
+        });
     }
 }
