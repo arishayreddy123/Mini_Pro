@@ -1,11 +1,13 @@
 package com.arishay.mini_project.player;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.widget.*;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.arishay.mini_project.R;
 import com.arishay.mini_project.model.Question;
@@ -29,12 +31,14 @@ public class PlayerQuizActivity extends AppCompatActivity {
     private boolean isEditing = false;
     private boolean isWaiting = false;
 
+    private boolean backPressedOnce = false;
+    private Handler backHandler = new Handler();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player_quiz);
 
-        // UI References
         questionText = findViewById(R.id.questionText);
         feedbackText = findViewById(R.id.feedbackText);
         optionsGroup = findViewById(R.id.optionsGroup);
@@ -42,7 +46,6 @@ public class PlayerQuizActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         progressText = findViewById(R.id.progressText);
 
-        // Receive data
         tournamentId = getIntent().getStringExtra("tournamentId");
         isEditing = getIntent().getBooleanExtra("isEditing", false);
         currentQuestionIndex = getIntent().getIntExtra("editIndex", 0);
@@ -52,7 +55,6 @@ public class PlayerQuizActivity extends AppCompatActivity {
         }
 
         db = FirebaseFirestore.getInstance();
-
         loadQuestions();
 
         submitBtn.setOnClickListener(v -> checkAnswer());
@@ -79,12 +81,10 @@ public class PlayerQuizActivity extends AppCompatActivity {
         Question q = questionList.get(currentQuestionIndex);
         questionText.setText("Q" + (currentQuestionIndex + 1) + ": " + q.question);
 
-        // Set progress
         progressText.setText("Question " + (currentQuestionIndex + 1) + " of " + questionList.size());
         progressBar.setMax(questionList.size());
         progressBar.setProgress(currentQuestionIndex + 1);
 
-        // Display options
         List<String> allOptions = new ArrayList<>(q.incorrect_answers);
         allOptions.add(q.correct_answer);
         Collections.shuffle(allOptions);
@@ -94,7 +94,6 @@ public class PlayerQuizActivity extends AppCompatActivity {
             rb.setText(option);
             optionsGroup.addView(rb);
 
-            // Pre-select if already answered
             String previouslySelected = selectedAnswers.get(currentQuestionIndex);
             if (previouslySelected != null && previouslySelected.equals(option)) {
                 rb.setChecked(true);
@@ -136,7 +135,6 @@ public class PlayerQuizActivity extends AppCompatActivity {
             isWaiting = false;
 
             if (isEditing) {
-                // Return to review screen
                 Intent intent = new Intent(this, ReviewAnswersActivity.class);
                 intent.putExtra("tournamentId", tournamentId);
                 intent.putExtra("answers", new HashMap<>(selectedAnswers));
@@ -147,7 +145,6 @@ public class PlayerQuizActivity extends AppCompatActivity {
                 if (currentQuestionIndex < questionList.size()) {
                     showQuestion();
                 } else {
-                    // Finished quiz → go to review
                     Intent intent = new Intent(this, ReviewAnswersActivity.class);
                     intent.putExtra("tournamentId", tournamentId);
                     intent.putExtra("answers", new HashMap<>(selectedAnswers));
@@ -156,5 +153,25 @@ public class PlayerQuizActivity extends AppCompatActivity {
                 }
             }
         }, 2500);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (backPressedOnce) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Exit Quiz")
+                    .setMessage("Are you sure you want to exit the quiz?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        Intent intent = new Intent(this, PlayerViewTournamentsActivity.class);
+                        startActivity(intent);
+                        finish();
+                    })
+                    .setNegativeButton("No", null)
+                    .show();
+        } else {
+            backPressedOnce = true;
+            Toast.makeText(this, "Press again to exit the quiz", Toast.LENGTH_SHORT).show();
+            backHandler.postDelayed(() -> backPressedOnce = false, 2000);
+        }
     }
 }
