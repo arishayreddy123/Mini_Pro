@@ -37,6 +37,8 @@
         <!-- Player activities -->
         <activity android:name=".player.PlayerViewTournamentsActivity" />
         <activity android:name=".player.PlayerQuizActivity" />
+        <activity android:name=".admin.AdminDashboardActivity" />
+
 
         <!-- Default MainActivity (not currently used to launch) -->
         <activity android:name=".MainActivity" />
