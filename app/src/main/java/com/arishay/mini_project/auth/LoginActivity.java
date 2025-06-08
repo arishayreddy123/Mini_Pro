@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.arishay.mini_project.R;
 import com.arishay.mini_project.admin.AdminDashboardActivity;
+import com.arishay.mini_project.player.PlayerHomeActivity;
 import com.arishay.mini_project.player.PlayerViewTournamentsActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -55,7 +56,7 @@ public class LoginActivity extends AppCompatActivity {
                                         if ("admin".equals(role)) {
                                             startActivity(new Intent(this, AdminDashboardActivity.class));
                                         } else {
-                                            startActivity(new Intent(this, PlayerViewTournamentsActivity.class));
+                                            startActivity(new Intent(this, PlayerHomeActivity.class));
                                         }
                                         finish();
                                     })

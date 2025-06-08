@@ -1,5 +1,8 @@
 package com.arishay.mini_project.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Tournament {
     public String id;
     public String name;
@@ -7,9 +10,15 @@ public class Tournament {
     public String difficulty;
     public String startDate;
     public String endDate;
-    public Integer likes; // ✅ use Integer to allow null handling
 
-    // Required empty constructor for Firestore
+    public List<String> playedUserIds;
+    public int likeCount;
+    public List<String> likedUserIds;
+
+    // Not stored in Firestore — runtime-only
+    public boolean canPlay = false;
+
+    // Required public constructor for Firestore
     public Tournament() {}
 
     public Tournament(String name, String category, String difficulty, String startDate, String endDate) {
@@ -18,6 +27,8 @@ public class Tournament {
         this.difficulty = difficulty;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.likes = 0;
+        this.playedUserIds = new ArrayList<>();
+        this.likedUserIds = new ArrayList<>();
+        this.likeCount = 0;
     }
 }

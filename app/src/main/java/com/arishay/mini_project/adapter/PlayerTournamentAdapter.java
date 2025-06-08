@@ -9,50 +9,44 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.arishay.mini_project.R;
 import com.arishay.mini_project.model.Tournament;
 import com.arishay.mini_project.player.PlayerQuizActivity;
-import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
-
+import com.google.firebase.auth.FirebaseAuth;
 import java.util.List;
 
 public class PlayerTournamentAdapter extends RecyclerView.Adapter<PlayerTournamentAdapter.ViewHolder> {
 
-    private Context context;
     private List<Tournament> tournamentList;
+    private Context context;
 
-    public PlayerTournamentAdapter(Context context, List<Tournament> tournamentList) {
+    public PlayerTournamentAdapter(Context context, List<Tournament> list) {
         this.context = context;
-        this.tournamentList = tournamentList;
+        this.tournamentList = list;
     }
 
     @NonNull
     @Override
-    public PlayerTournamentAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(context).inflate(R.layout.tournament_item_player, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull PlayerTournamentAdapter.ViewHolder holder, int position) {
-        Tournament t = tournamentList.get(position);
+    public void onBindViewHolder(ViewHolder h, int pos) {
+        Tournament t = tournamentList.get(pos);
+        h.name.setText(t.name);
+        h.category.setText("Category: " + t.category);
+        h.difficulty.setText("Difficulty: " + t.difficulty);
+        h.dates.setText(t.startDate + " to " + t.endDate);
 
-        holder.name.setText(t.name);
-        holder.category.setText("Category: " + t.category);
-        holder.difficulty.setText("Difficulty: " + t.difficulty);
-        holder.dates.setText("From " + t.startDate + " to " + t.endDate);
+        String uid = FirebaseAuth.getInstance().getUid();
+        boolean hasPlayed = t.playedUserIds != null && t.playedUserIds.contains(uid);
 
-        holder.playBtn.setOnClickListener(v -> {
-            Intent intent = new Intent(context, PlayerQuizActivity.class);
-            intent.putExtra("tournamentId", t.id);
-            context.startActivity(intent);
-        });
+        h.playBtn.setEnabled(!hasPlayed);
+        h.playBtn.setText(hasPlayed ? "Already Played" : "Play");
 
-        holder.likeBtn.setOnClickListener(v -> {
-            FirebaseFirestore db = FirebaseFirestore.getInstance();
-            db.collection("tournaments").document(t.id)
-                    .update("likes", FieldValue.increment(1))
-                    .addOnSuccessListener(unused ->
-                            Toast.makeText(context, "Liked!", Toast.LENGTH_SHORT).show()
-                    );
+        h.playBtn.setOnClickListener(v -> {
+            Intent i = new Intent(context, PlayerQuizActivity.class);
+            i.putExtra("tournamentId", t.id);
+            context.startActivity(i);
         });
     }
 
@@ -61,18 +55,17 @@ public class PlayerTournamentAdapter extends RecyclerView.Adapter<PlayerTourname
         return tournamentList.size();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends RecyclerView.ViewHolder {
         TextView name, category, difficulty, dates;
-        Button playBtn, likeBtn;
+        Button playBtn;
 
-        public ViewHolder(@NonNull View itemView) {
+        ViewHolder(View itemView) {
             super(itemView);
             name = itemView.findViewById(R.id.tourName);
             category = itemView.findViewById(R.id.tourCategory);
             difficulty = itemView.findViewById(R.id.tourDifficulty);
             dates = itemView.findViewById(R.id.tourDates);
             playBtn = itemView.findViewById(R.id.playBtn);
-            likeBtn = itemView.findViewById(R.id.likeBtn);
         }
     }
 }

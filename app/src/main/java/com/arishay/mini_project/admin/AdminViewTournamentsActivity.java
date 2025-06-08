@@ -1,19 +1,21 @@
 package com.arishay.mini_project.admin;
 
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.*;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.arishay.mini_project.R;
 import com.arishay.mini_project.adapter.AdminTournamentAdapter;
 import com.arishay.mini_project.model.Tournament;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.*;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class AdminViewTournamentsActivity extends AppCompatActivity {
@@ -22,102 +24,89 @@ public class AdminViewTournamentsActivity extends AppCompatActivity {
     private AdminTournamentAdapter adapter;
     private List<Tournament> tournamentList = new ArrayList<>();
     private FirebaseFirestore db;
-    private Button backBtn;
-    private Spinner filterSpinner;
-
-    private final String[] filters = {"All", "Ongoing", "Upcoming", "Past"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_view_tournaments);
 
-        db = FirebaseFirestore.getInstance();
-
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        adapter = new AdminTournamentAdapter(tournamentList,
-                this::editTournament,
-                this::deleteTournament);
-        recyclerView.setAdapter(adapter);
+        db = FirebaseFirestore.getInstance();
 
-        filterSpinner = findViewById(R.id.filterSpinner);
-        ArrayAdapter<String> filterAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_dropdown_item, filters);
-        filterSpinner.setAdapter(filterAdapter);
-        filterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        adapter = new AdminTournamentAdapter(tournamentList, new AdminTournamentAdapter.AdminAction() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                loadTournaments(filters[pos]);
+            public void onEdit(Tournament t) {
+                editTournament(t);
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
+            public void onDelete(Tournament t) {
+                deleteTournament(t);
             }
         });
 
-        backBtn = findViewById(R.id.backBtn);
-        backBtn.setOnClickListener(v -> finish());
+        recyclerView.setAdapter(adapter);
+
+        loadTournaments();
     }
 
-    private void loadTournaments(String filterType) {
-        db.collection("tournaments")
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
+    private void loadTournaments() {
+        db.collection("tournaments").get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
                     tournamentList.clear();
-                    Date today = new Date();
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-
-                    for (DocumentSnapshot doc : querySnapshot) {
+                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
                         Tournament t = doc.toObject(Tournament.class);
-                        if (t == null) continue;
-
-                        t.id = doc.getId();
-                        if (t.likes == null) t.likes = 0;
-
-                        try {
-                            Date start = sdf.parse(t.startDate);
-                            Date end = sdf.parse(t.endDate);
-
-                            if ("All".equals(filterType)) {
-                                tournamentList.add(t);
-                            } else if ("Ongoing".equals(filterType)) {
-                                if (start != null && end != null && !today.before(start) && !today.after(end)) {
-                                    tournamentList.add(t);
-                                }
-                            } else if ("Upcoming".equals(filterType)) {
-                                if (start != null && today.before(start)) {
-                                    tournamentList.add(t);
-                                }
-                            } else if ("Past".equals(filterType)) {
-                                if (end != null && today.after(end)) {
-                                    tournamentList.add(t);
-                                }
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                        if (t != null) {
+                            t.id = doc.getId();
+                            tournamentList.add(t);
                         }
                     }
-
                     adapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Error loading tournaments", Toast.LENGTH_SHORT).show());
+                });
     }
 
     private void editTournament(Tournament t) {
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("name", t.name + " (Updated)");
-        updates.put("startDate", t.startDate);
-        updates.put("endDate", t.endDate);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Update Tournament");
 
-        db.collection("tournaments").document(t.id)
-                .update(updates)
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(this, "Tournament updated", Toast.LENGTH_SHORT).show();
-                    loadTournaments(filterSpinner.getSelectedItem().toString());
-                });
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        final EditText nameInput = new EditText(this);
+        nameInput.setHint("Tournament Name");
+        nameInput.setText(t.name);
+        layout.addView(nameInput);
+
+        final EditText startDate = new EditText(this);
+        startDate.setHint("Start Date (yyyy-MM-dd)");
+        startDate.setText(t.startDate);
+        layout.addView(startDate);
+
+        final EditText endDate = new EditText(this);
+        endDate.setHint("End Date (yyyy-MM-dd)");
+        endDate.setText(t.endDate);
+        layout.addView(endDate);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("Update", (dialog, which) -> {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("name", nameInput.getText().toString());
+            updates.put("startDate", startDate.getText().toString());
+            updates.put("endDate", endDate.getText().toString());
+
+            db.collection("tournaments").document(t.id)
+                    .update(updates)
+                    .addOnSuccessListener(unused -> {
+                        Toast.makeText(this, "Updated", Toast.LENGTH_SHORT).show();
+                        loadTournaments();
+                    });
+        });
+
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
     }
 
     private void deleteTournament(Tournament t) {
@@ -129,7 +118,7 @@ public class AdminViewTournamentsActivity extends AppCompatActivity {
                             .delete()
                             .addOnSuccessListener(unused -> {
                                 Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show();
-                                loadTournaments(filterSpinner.getSelectedItem().toString());
+                                loadTournaments();
                             });
                 })
                 .setNegativeButton("Cancel", null)

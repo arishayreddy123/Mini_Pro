@@ -43,6 +43,7 @@
         <!-- Default MainActivity (not currently used to launch) -->
         <activity android:name=".MainActivity" />
         <activity android:name=".player.ReviewAnswersActivity" />
+    <activity android:name=".player.PlayerHomeActivity"/>
 
     </application>
 

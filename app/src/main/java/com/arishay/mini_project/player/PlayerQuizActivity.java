@@ -5,16 +5,13 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.widget.*;
-
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.arishay.mini_project.R;
 import com.arishay.mini_project.model.Question;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
-
 import org.json.JSONObject;
-
 import java.util.*;
 
 public class PlayerQuizActivity extends AppCompatActivity {
@@ -62,10 +59,7 @@ public class PlayerQuizActivity extends AppCompatActivity {
                     String key = it.next();
                     selectedAnswers.put(Integer.parseInt(key), json.getString(key));
                 }
-                Toast.makeText(this, "Resumed previous quiz", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { e.printStackTrace(); }
         } else {
             tournamentId = getIntent().getStringExtra("tournamentId");
         }
@@ -81,8 +75,8 @@ public class PlayerQuizActivity extends AppCompatActivity {
                 .document(tournamentId)
                 .collection("questions")
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                .addOnSuccessListener(snapshot -> {
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
                         Question q = doc.toObject(Question.class);
                         questionList.add(q);
                     }
@@ -101,17 +95,17 @@ public class PlayerQuizActivity extends AppCompatActivity {
         progressBar.setMax(questionList.size());
         progressBar.setProgress(currentQuestionIndex + 1);
 
-        List<String> allOptions = new ArrayList<>(q.incorrect_answers);
-        allOptions.add(q.correct_answer);
-        Collections.shuffle(allOptions);
+        List<String> options = new ArrayList<>(q.incorrect_answers);
+        options.add(q.correct_answer);
+        Collections.shuffle(options);
 
-        for (String option : allOptions) {
+        for (String option : options) {
             RadioButton rb = new RadioButton(this);
             rb.setText(option);
             optionsGroup.addView(rb);
 
-            String previouslySelected = selectedAnswers.get(currentQuestionIndex);
-            if (previouslySelected != null && previouslySelected.equals(option)) {
+            String selected = selectedAnswers.get(currentQuestionIndex);
+            if (selected != null && selected.equals(option)) {
                 rb.setChecked(true);
             }
         }
@@ -128,19 +122,16 @@ public class PlayerQuizActivity extends AppCompatActivity {
 
         RadioButton selectedBtn = findViewById(selectedId);
         String selectedAnswer = selectedBtn.getText().toString();
-
         Question current = questionList.get(currentQuestionIndex);
-        String correctAnswer = current.correct_answer;
 
         selectedAnswers.put(currentQuestionIndex, selectedAnswer);
-
         isWaiting = true;
         submitBtn.setEnabled(false);
 
-        if (selectedAnswer.equals(correctAnswer)) {
+        if (selectedAnswer.equals(current.correct_answer)) {
             feedbackText.setText("✅ Correct!");
         } else {
-            feedbackText.setText("❌ Incorrect.\nCorrect answer: " + correctAnswer);
+            feedbackText.setText("❌ Incorrect.\nCorrect answer: " + current.correct_answer);
         }
 
         feedbackText.setVisibility(TextView.VISIBLE);
@@ -154,29 +145,34 @@ public class PlayerQuizActivity extends AppCompatActivity {
             if (currentQuestionIndex < questionList.size()) {
                 showQuestion();
             } else {
-                // Clear resume cache
-                SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
-                editor.clear();
-                editor.apply();
-
-                showScoreDialog();
+                markQuizAsCompleted();
             }
-        }, 2500);
+        }, 2000);
+    }
+
+    private void markQuizAsCompleted() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        db.collection("tournaments")
+                .document(tournamentId)
+                .update("playedUserIds", FieldValue.arrayUnion(uid))
+                .addOnSuccessListener(unused -> showScoreDialog());
     }
 
     private void showScoreDialog() {
-        int correctCount = 0;
+        int correct = 0;
         for (int i = 0; i < questionList.size(); i++) {
-            String selected = selectedAnswers.get(i);
-            if (selected != null && selected.equals(questionList.get(i).correct_answer)) {
-                correctCount++;
-            }
+            String sel = selectedAnswers.get(i);
+            if (sel != null && sel.equals(questionList.get(i).correct_answer)) correct++;
         }
+
+        // Clear cache
+        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+        editor.clear().apply();
 
         new AlertDialog.Builder(this)
                 .setTitle("Quiz Completed")
-                .setMessage("Thanks for playing!\nYour score: " + correctCount + "/" + questionList.size())
-                .setPositiveButton("Back to Quizzes", (dialog, which) -> {
+                .setMessage("Thanks for playing!\nYour score: " + correct + "/" + questionList.size())
+                .setPositiveButton("Back to Quizzes", (d, w) -> {
                     startActivity(new Intent(this, PlayerViewTournamentsActivity.class));
                     finish();
                 })
@@ -185,39 +181,17 @@ public class PlayerQuizActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-
-        editor.putString(KEY_TOURNAMENT, tournamentId);
-        editor.putInt(KEY_INDEX, currentQuestionIndex);
-
-        JSONObject json = new JSONObject();
-        for (Map.Entry<Integer, String> entry : selectedAnswers.entrySet()) {
-            try {
-                json.put(String.valueOf(entry.getKey()), entry.getValue());
-            } catch (Exception ignored) {}
-        }
-        editor.putString(KEY_ANSWERS, json.toString());
-        editor.apply();
-    }
-
-    @Override
     public void onBackPressed() {
         if (backPressedOnce) {
             new AlertDialog.Builder(this)
                     .setTitle("Exit Quiz")
-                    .setMessage("Are you sure you want to exit the quiz?")
-                    .setPositiveButton("Yes", (dialog, which) -> {
-                        startActivity(new Intent(this, PlayerViewTournamentsActivity.class));
-                        finish();
-                    })
+                    .setMessage("Are you sure you want to exit?")
+                    .setPositiveButton("Yes", (d, w) -> finish())
                     .setNegativeButton("No", null)
                     .show();
         } else {
             backPressedOnce = true;
-            Toast.makeText(this, "Press again to exit the quiz", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Press again to exit", Toast.LENGTH_SHORT).show();
             backHandler.postDelayed(() -> backPressedOnce = false, 2000);
         }
     }

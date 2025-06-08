@@ -1,27 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/backBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Back" />
 
     <TextView
-        android:layout_width="match_parent"
+        android:id="@+id/infoText"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Available Quizzes"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:paddingBottom="8dp" />
+        android:text="No tournaments found."
+        android:visibility="gone"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:paddingTop="10dp"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent"
+        android:paddingTop="10dp"/>
 
-    <Button
-        android:id="@+id/backBtn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Back" />
 </LinearLayout>
