@@ -1,17 +1,19 @@
 package com.arishay.mini_project.player;
 
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.View;
 import android.widget.*;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.arishay.mini_project.R;
 import com.arishay.mini_project.model.Question;
 import com.google.firebase.firestore.*;
+
+import org.json.JSONObject;
 
 import java.util.*;
 
@@ -28,11 +30,14 @@ public class PlayerQuizActivity extends AppCompatActivity {
 
     private int currentQuestionIndex = 0;
     private String tournamentId;
-    private boolean isEditing = false;
     private boolean isWaiting = false;
-
     private boolean backPressedOnce = false;
     private Handler backHandler = new Handler();
+
+    private static final String PREFS_NAME = "QuizPrefs";
+    private static final String KEY_TOURNAMENT = "currentTournamentId";
+    private static final String KEY_INDEX = "currentQuestionIndex";
+    private static final String KEY_ANSWERS = "selectedAnswers";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,12 +51,23 @@ public class PlayerQuizActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         progressText = findViewById(R.id.progressText);
 
-        tournamentId = getIntent().getStringExtra("tournamentId");
-        isEditing = getIntent().getBooleanExtra("isEditing", false);
-        currentQuestionIndex = getIntent().getIntExtra("editIndex", 0);
-
-        if (getIntent().getSerializableExtra("answers") != null) {
-            selectedAnswers = (Map<Integer, String>) getIntent().getSerializableExtra("answers");
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        if (prefs.contains(KEY_TOURNAMENT)) {
+            tournamentId = prefs.getString(KEY_TOURNAMENT, null);
+            currentQuestionIndex = prefs.getInt(KEY_INDEX, 0);
+            try {
+                String answersJson = prefs.getString(KEY_ANSWERS, "{}");
+                JSONObject json = new JSONObject(answersJson);
+                for (Iterator<String> it = json.keys(); it.hasNext(); ) {
+                    String key = it.next();
+                    selectedAnswers.put(Integer.parseInt(key), json.getString(key));
+                }
+                Toast.makeText(this, "Resumed previous quiz", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            tournamentId = getIntent().getStringExtra("tournamentId");
         }
 
         db = FirebaseFirestore.getInstance();
@@ -75,7 +91,7 @@ public class PlayerQuizActivity extends AppCompatActivity {
     }
 
     private void showQuestion() {
-        feedbackText.setVisibility(View.GONE);
+        feedbackText.setVisibility(TextView.GONE);
         optionsGroup.removeAllViews();
 
         Question q = questionList.get(currentQuestionIndex);
@@ -127,32 +143,64 @@ public class PlayerQuizActivity extends AppCompatActivity {
             feedbackText.setText("❌ Incorrect.\nCorrect answer: " + correctAnswer);
         }
 
-        feedbackText.setVisibility(View.VISIBLE);
+        feedbackText.setVisibility(TextView.VISIBLE);
 
         new Handler().postDelayed(() -> {
-            feedbackText.setVisibility(View.GONE);
+            feedbackText.setVisibility(TextView.GONE);
             submitBtn.setEnabled(true);
             isWaiting = false;
 
-            if (isEditing) {
-                Intent intent = new Intent(this, ReviewAnswersActivity.class);
-                intent.putExtra("tournamentId", tournamentId);
-                intent.putExtra("answers", new HashMap<>(selectedAnswers));
-                startActivity(intent);
-                finish();
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questionList.size()) {
+                showQuestion();
             } else {
-                currentQuestionIndex++;
-                if (currentQuestionIndex < questionList.size()) {
-                    showQuestion();
-                } else {
-                    Intent intent = new Intent(this, ReviewAnswersActivity.class);
-                    intent.putExtra("tournamentId", tournamentId);
-                    intent.putExtra("answers", new HashMap<>(selectedAnswers));
-                    startActivity(intent);
-                    finish();
-                }
+                // Clear resume cache
+                SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+                editor.clear();
+                editor.apply();
+
+                showScoreDialog();
             }
         }, 2500);
+    }
+
+    private void showScoreDialog() {
+        int correctCount = 0;
+        for (int i = 0; i < questionList.size(); i++) {
+            String selected = selectedAnswers.get(i);
+            if (selected != null && selected.equals(questionList.get(i).correct_answer)) {
+                correctCount++;
+            }
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Quiz Completed")
+                .setMessage("Thanks for playing!\nYour score: " + correctCount + "/" + questionList.size())
+                .setPositiveButton("Back to Quizzes", (dialog, which) -> {
+                    startActivity(new Intent(this, PlayerViewTournamentsActivity.class));
+                    finish();
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        editor.putString(KEY_TOURNAMENT, tournamentId);
+        editor.putInt(KEY_INDEX, currentQuestionIndex);
+
+        JSONObject json = new JSONObject();
+        for (Map.Entry<Integer, String> entry : selectedAnswers.entrySet()) {
+            try {
+                json.put(String.valueOf(entry.getKey()), entry.getValue());
+            } catch (Exception ignored) {}
+        }
+        editor.putString(KEY_ANSWERS, json.toString());
+        editor.apply();
     }
 
     @Override
@@ -162,8 +210,7 @@ public class PlayerQuizActivity extends AppCompatActivity {
                     .setTitle("Exit Quiz")
                     .setMessage("Are you sure you want to exit the quiz?")
                     .setPositiveButton("Yes", (dialog, which) -> {
-                        Intent intent = new Intent(this, PlayerViewTournamentsActivity.class);
-                        startActivity(intent);
+                        startActivity(new Intent(this, PlayerViewTournamentsActivity.class));
                         finish();
                     })
                     .setNegativeButton("No", null)
